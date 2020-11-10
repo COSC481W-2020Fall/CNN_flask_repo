@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from os.path import isfile, join
+from os.path import isfile, join, dirname, realpath
 from time import time_ns
 
 THIS_DIR = dirname(realpath(__file__))
