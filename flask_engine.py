@@ -1,16 +1,17 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from os.path import isfile
+from os.path import isfile, join
+from time import time_ns
 
 
-def get_breed_info(file):
-    ret_name = filename.split('.')[0]+".txt"
+def get_breed_info(filename):
+    ret_name = join('..','output', filename.split('.')[0]+".txt")
     ret = ""
-    while (not isfile(ret_name)):
+    while not isfile(ret_name):
         pass
     with open(ret_name) as file:
         ret = file.read()
-    return ret
+    return jsonify({"result" : str(ret)})
 
 def create_app():
     app = Flask(__name__)
@@ -21,18 +22,26 @@ def create_app():
 
     @app.route("/image/", methods=['POST'])
     def post_image():
+        if 'file' not in request.files: # and 'bitmap' not in request.files:
+            return jsonify({"result": "No image sent"})
         file = request.files['file']
-        filename = secure_filename(file.filename)
-        file.save(os.path.join('..', 'images', filename))
-        return get_breed_info(filename)
-
-    @app.route("/image/", methods=['PUT'])
-    def put_image():
-        file = request.files['file']
-        filename = secure_filename(file.filename)
-        file.save(os.path.join('..', 'images', filename))
-        return get_breed_info(filename)
+        # bitmap = request.files['bitmap']
+        # if user does not select file, browser also
+        # submit an empty part without filename
+        if file.filename == '':
+            return jsonify({"result": "No image recieved"})
+        if file:
+            filename = file.filename
+            UPLOAD_FOLDER = join('..', 'images')
+            file.save(join(UPLOAD_FOLDER, filename))
+            return get_breed_info(filename)
         
+        # if bitmap:
+        #     filename = time_ns()
+        #     UPLOAD_FOLDER = join('..', 'images')
+        #     file.save(join(UPLOAD_FOLDER, filename))
+        #     return get_breed_info(filename)
+            
 
     @app.route("/breed/<string:file>", methods=['GET'])
     def get_breed():
