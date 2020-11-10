@@ -3,6 +3,8 @@ from flask_cors import CORS
 from os.path import isfile, join
 from time import time_ns
 
+THIS_DIR = dirname(realpath(__file__))
+HOME     = dirname(THIS_DIR)
 
 def get_breed_info(filename):
     ret_name = join('..','output', filename.split('.')[0]+".txt")
@@ -32,7 +34,7 @@ def create_app():
             return jsonify({"result": "No image recieved"})
         if file:
             filename = file.filename
-            UPLOAD_FOLDER = join('..', 'images')
+            UPLOAD_FOLDER = join(HOME, 'images')
             file.save(join(UPLOAD_FOLDER, filename))
             return get_breed_info(filename)
         
