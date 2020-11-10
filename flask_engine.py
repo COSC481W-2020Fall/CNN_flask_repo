@@ -7,7 +7,7 @@ THIS_DIR = dirname(realpath(__file__))
 HOME     = dirname(THIS_DIR)
 
 def get_breed_info(filename):
-    ret_name = join('..','output', filename.split('.')[0]+".txt")
+    ret_name = join(HOME,'output', filename.split('.')[0]+".txt")
     ret = ""
     while not isfile(ret_name):
         pass
