@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from os.path import isfile, join, dirname, realpath
 from time import time_ns
+from base64 import b64decode
 
 THIS_DIR = dirname(realpath(__file__))
 HOME     = dirname(THIS_DIR)
@@ -31,7 +32,12 @@ def create_app():
         # if user does not select file, browser also
         # submit an empty part without filename
         if file.filename == '':
-            return jsonify({"result": "No image recieved"})
+            imgdata = b64decode(encodedImg)
+            filename = time_ns()
+            UPLOAD_FOLDER = join(HOME, 'images')
+            with open(join(UPLOAD_FOLDER, filename), "wb") as file:
+                file.write(imgdata)
+            return get_breed_info(filename)
         if file:
             filename = file.filename
             UPLOAD_FOLDER = join(HOME, 'images')
