@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from os.path import isfile, join, dirname, realpath
-from time import time_ns
+from time import time_ns, sleep
 from base64 import b64decode
 
 THIS_DIR = dirname(realpath(__file__))
@@ -12,9 +12,10 @@ def get_breed_info(filename):
     ret = ""
     while not isfile(ret_name):
         pass
+    sleep(.05)
     with open(ret_name) as file:
         ret = file.read()
-    return jsonify({"result" : str(ret)})
+    return jsonify({"result" : ret})
 
 def create_app():
     app = Flask(__name__)
@@ -25,24 +26,28 @@ def create_app():
 
     @app.route("/image/", methods=['POST'])
     def post_image():
-        if 'file' not in request.files: # and 'bitmap' not in request.files:
-            return jsonify({"result": "No image sent"})
-        file = request.files['file']
-        # bitmap = request.files['bitmap']
-        # if user does not select file, browser also
-        # submit an empty part without filename
-        if file.filename == '':
-            imgdata = b64decode(encodedImg)
-            filename = time_ns()
-            UPLOAD_FOLDER = join(HOME, 'images')
-            with open(join(UPLOAD_FOLDER, filename), "wb") as file:
-                file.write(imgdata)
-            return get_breed_info(filename)
-        if file:
-            filename = file.filename
-            UPLOAD_FOLDER = join(HOME, 'images')
-            file.save(join(UPLOAD_FOLDER, filename))
-            return get_breed_info(filename)
+        if 'file' in request.files:
+            file = request.files['file']
+            if file:
+                if file.filename != '':
+                    filename = file.filename
+                    UPLOAD_FOLDER = join(HOME, 'images')
+                    file.save(join(UPLOAD_FOLDER, filename))
+                    return get_breed_info(filename)
+                else:
+                    return jsonify({"result": "No image recieved"})
+        elif 'file' in request.form:
+            encodedImg = request.form['file']
+            if encodedImg:
+                imgdata = b64decode(encodedImg)
+                filename = time_ns()
+                UPLOAD_FOLDER = join(HOME, 'images')
+                with open(join(UPLOAD_FOLDER, filename), "wb") as file:
+                    file.write(imgdata)
+                return get_breed_info(filename)
+        else:
+            return jsonify({'result':'Nothing recieved'})
+            
         
         # if bitmap:
         #     filename = time_ns()
