@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, redirect, url_for, render_template
 from flask_cors import CORS
 from os.path import isfile, join, dirname, realpath
 from os import listdir
@@ -22,32 +22,70 @@ def get_breed_info(filename):
 def create_app():
     app = Flask(__name__)
 
-    app.config.update(dict(DEBUG=False))
+    app.config.update(dict(DEBUG=True))
 
     CORS(app)
 
-    @app.route("/image/", methods=['POST'])
+    @app.route("/", methods=['GET','POST'])
+    def home():
+        return render_template('index.html')
+
+    @app.route("/image/", methods=['GET','POST'])
     def post_image():
-        if 'file' in request.files:
-            file = request.files['file']
-            if file:
-                if file.filename != '':
-                    filename = file.filename
-                    UPLOAD_FOLDER = join(HOME, 'images')
-                    file.save(join(UPLOAD_FOLDER, filename))
-                    return get_breed_info(filename)
-                else:
-                    return jsonify({"result": "No image recieved"})
-        else:
-            return jsonify({'result':'Nothing recieved'})
+        if request.method == 'POST':
+            if 'file' in request.files:
+                file = request.files['file']
+                if file:
+                    if file.filename != '':
+                        filename = file.filename
+                        UPLOAD_FOLDER = join(HOME, 'images')
+                        file.save(join(UPLOAD_FOLDER, filename))
+                        return get_breed_info(filename)
+                    else:
+                        return jsonify({"result": "No image recieved"})
+            elif 'file' in request.form:
+                file = request.form['file']
+                if file:
+                    if file.filename != '':
+                        filename = file.filename
+                        UPLOAD_FOLDER = join(HOME, 'images')
+                        file.save(join(UPLOAD_FOLDER, filename))
+                        return get_breed_info(filename)
+                    else:
+                        return jsonify({"result": "No image recieved"})
+            else:
+                return jsonify({'result':'Nothing recieved'})
+        if request.method == 'GET':
+            return render_template('upload.html')
             
-    @app.route("/correction/", methods=['POST'])
+    @app.route("/correction/", methods=['GET','POST'])
     def correct_breed():
-        CORR_DIR = join(HOME, 'correction')
-        file_name = f"{len(listdir(CORR_DIR))}_corr.json"
-        with open(join(CORR_DIR, file_name), "w+") as file:
-            file.write(dumps(request.form))
-        return {'result': "Submitted!"}
+        if request.method == 'POST':
+            try:
+                CORR_DIR = join(HOME, 'correction')
+                file_name = f"{len(listdir(CORR_DIR))}_corr.json"
+                user_input=""
+                if 'file' in request.files:
+                    file = request.files['file']
+                    if file:
+                        if file.filename != '':
+                            filename = file.filename
+                            user_input=dumps({"image": filename, "breed": request.form["breed"]})
+                        else:
+                            return jsonify({"result": "No image recieved"})
+                else:
+                    user_input = dumps(request.form)
+                if len(user_input) <= 2:
+                    raise BaseException
+                with open(join(CORR_DIR, file_name), "w+") as file:
+                    file.write(user_input)
+                return jsonify({'result': "Submitted!"})
+            except BaseException as e:
+                print(e)
+                return jsonify({'result': 'Error has occured, please try again'})
+        if request.method == 'GET':
+            return render_template('correction.html')
+
 
     @app.route("/breed/<string:file>", methods=['GET'])
     def get_breed():
