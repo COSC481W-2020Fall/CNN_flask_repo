@@ -5,9 +5,13 @@ from os import listdir
 from time import time_ns, sleep
 from base64 import b64decode
 from json import loads, dumps
+from pyheif import read_heif
+from PIL import Image
 
 THIS_DIR = dirname(realpath(__file__))
 HOME     = dirname(THIS_DIR)
+
+ALLOWED_IMAGES = ["png", "jpeg", "jpg"]
 
 def get_breed_info(filename):
     ret_name = join(HOME,'output', filename.split('.')[0]+".txt")
@@ -38,8 +42,22 @@ def create_app():
                 if file:
                     if file.filename != '':
                         filename = file.filename
-                        UPLOAD_FOLDER = join(HOME, 'images')
-                        file.save(join(UPLOAD_FOLDER, filename))
+                        ext = filename.split(".")[-1].lower()
+                        if ext in ALLOWED_IMAGES:
+                            UPLOAD_FOLDER = join(HOME, 'images')
+                            file.save(join(UPLOAD_FOLDER, filename))
+                        elif ext in ['heic', 'avif']:
+                            CONV_FOLDER = join(HOME, 'conversion')
+                            UPLOAD_FOLDER = join(HOME, 'images')
+                            file.save(join(CONV_FOLDER, filename))
+                            with open(join(CONV_FOLDER, filename), 'rb') as file:
+                                i = read_heif(file)
+                                pi = Image.frombytes(
+                                    mode=i.mode,
+                                    size=i.size,
+                                    data=i.data
+                                )
+                                pi.save(join(UPLOAD_FOLDER,filename.split(".")[0] + '.jpeg'), format="jpeg")
                         return get_breed_info(filename)
                     else:
                         return jsonify({"result": "No image recieved"})
@@ -70,6 +88,9 @@ def create_app():
                     if file:
                         if file.filename != '':
                             filename = file.filename
+                            ext = filename.split(".")[-1].lower()
+                            if ext in ['heic', 'avif']:
+                                filename = filename.split(".")[0] + ".jpg"
                             user_input=dumps({"image": filename, "breed": request.form["breed"]})
                         else:
                             return jsonify({"result": "No image recieved"})
